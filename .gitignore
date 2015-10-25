@@ -1,0 +1,15 @@
+#################
+# Scrap folders #
+#################
+
+scrap/
+
+####################
+# Logs and reports #
+####################
+
+*.log
+*.rep
+*.csv
+reports/
+log.txt

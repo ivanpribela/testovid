@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!--                                                                          -->
+<!-- Copyright 2015 Ivan Pribela                                              -->
+<!--                                                                          -->
+<!-- Licensed under the Apache License, Version 2.0 (the "License");          -->
+<!-- you may not use this file except in compliance with the License.         -->
+<!-- You may obtain a copy of the License at                                  -->
+<!--                                                                          -->
+<!--     http://www.apache.org/licenses/LICENSE-2.0                           -->
+<!--                                                                          -->
+<!-- Unless required by applicable law or agreed to in writing, software      -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS,        -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. -->
+<!-- See the License for the specific language governing permissions and      -->
+<!-- limitations under the License.                                           -->
+<!--                                                                          -->
+<project name="testovid.engine" default="execute.all.aspects">
+
+  <!-- Inputs: course.id, assignment.id, student.id                     -->
+  <!-- Paths:  log.path, log.master, run.path, lib.path, test.path      -->
+  <!-- Human readable time stamp: time.start                            -->
+  <!-- Current dir is set to run.path                                   -->
+  <!-- Internationalization support through preloaded i18n.* properties -->
+  <target name="execute.all.aspects">
+
+    <!-- Load test info -->
+    <property file="test.properties" />
+
+    <!-- Write report header -->
+    <record name="${log.path}" action="start" emacsmode="yes"/>
+    <echo>${i18n.log.single.course} ${course.id}</echo>
+    <echo>${i18n.log.single.assignment} ${assignment.id}</echo>
+    <echo>${i18n.log.single.student} ${student.id}</echo>
+    <echo>${i18n.log.single.timestamp} ${time.start}</echo>
+    <echo/>
+    <record name="${log.path}" action="stop"/>
+
+    <!-- Start with zero points -->
+    <var name="total" value="0" />
+    <var name="percent" value="0" />
+
+    <!-- Go through all test targets -->
+    <for list="${aspects}" delimiter="," param="aspect.id">
+      <sequential>
+
+        <!-- Prepare properties -->
+        <property name="run.file" value="test.xml"/>
+        <property name="@{aspect.id}.name" value="???"/>
+        <property name="@{aspect.id}.weight" value="1"/>
+        <property name="@{aspect.id}.time" value="30"/>
+        <property name="@{aspect.id}.target" value="@{aspect.id}"/>
+        <dirname property="@{aspect.id}.dir" file="${run.file}"/>
+        <property name="@{aspect.id}.config" value="${@{aspect.id}.dir}/@{aspect.id}.properties"/>
+
+        <!-- Run the test -->
+        <antcallback target="execute.one.aspect" return="@{aspect.id}.time,@{aspect.id}.name,@{aspect.id}.weight,@{aspect.id}.score,@{aspect.id}.advice,@{aspect.id}.details">
+          <param name="run.path" value="${run.path}"/>
+          <param name="run.file" value="${run.file}"/>
+          <param name="course.id" value="${course.id}"/>
+          <param name="assignment.id" value="${assignment.id}"/>
+          <param name="student.id" value="${student.id}"/>
+          <param name="aspect.id" value="@{aspect.id}"/>
+          <param name="aspect.target" value="${@{aspect.id}.target}"/>
+          <param name="aspect.time" value="${@{aspect.id}.time}"/>
+          <param name="aspect.name" value="${@{aspect.id}.name}"/>
+          <param name="aspect.weight" value="${@{aspect.id}.weight}"/>
+          <param name="aspect.config" value="${@{aspect.id}.config}"/>
+        </antcallback>
+
+        <!-- Update score -->
+        <math result="total">
+          <op op="+">
+            <num value="${total}"/>
+            <op op="*">
+              <num value="${@{aspect.id}.score}"/>
+              <num value="${@{aspect.id}.weight}"/>
+            </op>
+          </op>
+        </math>
+        <math result="percent">
+          <op op="*">
+            <num value="${@{aspect.id}.score}"/>
+            <num value="100"/>
+          </op>
+        </math>
+
+        <!-- Write data to the report -->
+        <record name="${log.path}" action="start" emacsmode="yes"/>
+        <echo/>
+        <echo>${@{aspect.id}.name}</echo>
+        <if>
+          <equals arg1="${@{aspect.id}.weight}" arg2="1" />
+          <then>
+            <echo>${percent}% (${i18n.log.single.points} ${@{aspect.id}.weight} ${i18n.log.single.points.sg})</echo>
+          </then>
+          <else>
+            <echo>${percent}% (${i18n.log.single.points} ${@{aspect.id}.weight} ${i18n.log.single.points.pl})</echo>
+          </else>
+        </if>
+        <if>
+          <equals arg1="${@{aspect.id}.advice}" arg2=""/>
+          <else>
+            <echo>${@{aspect.id}.advice}</echo>
+          </else>
+        </if>
+        <if>
+          <equals arg1="${@{aspect.id}.details}" arg2=""/>
+          <else>
+            <echo>${@{aspect.id}.details}</echo>
+          </else>
+        </if>
+        <record name="${log.path}" action="stop"/>
+
+      </sequential>
+    </for>
+
+    <!-- Write total amount of points in the report -->
+    <record name="${log.path}" action="start" emacsmode="yes"/>
+    <echo/>
+    <echo/>
+    <echo>${i18n.log.single.divider}</echo>
+    <echo/>
+    <if>
+      <equals arg1="${total}" arg2="1" />
+      <then>
+        <echo>${i18n.log.single.total} ${total} ${i18n.log.single.points.sg}.</echo>
+      </then>
+      <else>
+        <echo>${i18n.log.single.total} ${total} ${i18n.log.single.points.pl}.</echo>
+      </else>
+    </if>
+    <record name="${log.path}" action="stop"/>
+
+    <!-- Write a line in the master report -->
+    <record name="${log.master}" action="start" emacsmode="yes" append="yes"/>
+    <echo>${student.id};${total}</echo>
+    <record name="${log.master}" action="stop"/>
+
+  </target>
+
+  <!-- Runs target ${run.target} from build file ${run.file} in working folder ${run.path} for ${run.time} seconds.         -->
+  <!--                                                                                                                      -->
+  <!-- Input: ! run.path             - Path to the working folder.                                                          -->
+  <!--        ! run.file             - Path to the file with aspect target.                                                 -->
+  <!--          course.id            - Course id.                                                                           -->
+  <!--          assignment.id        - Assignment id.                                                                       -->
+  <!--          student.id           - Student id.                                                                          -->
+  <!--        ! aspect.id            - One aspect that is to be executed.                                                   -->
+  <!--        ! aspect.target        - Target containing aspect's assessment code.                                          -->
+  <!--        ! aspect.time          - Execution time limit in seconds.                                                     -->
+  <!--          aspect.name          - Human readable name of the aspect.                                                   -->
+  <!--          aspect.weight        - Score is multiplied with this to get alloted points.                                 -->
+  <!--          aspect.config        - Name of the property file with config for the aspect target.                         -->
+  <!--                                 Defaults to ${aspect.id}.properties. Always relative to ${run.file} folder.          -->
+  <!--                                                                                                                      -->
+  <!-- Outputs: ${aspect.id}.time    - Time limit for the aspect's assessment.                                              -->
+  <!--          ${aspect.id}.name    - Human readable name of the aspect.                                                   -->
+  <!--          ${aspect.id}.weight  - Aspect's relative weight, multiplied with score to get alloted points.               -->
+  <!--          ${aspect.id}.score   - Assessment score, multiplied with weight to get alloted points.                      -->
+  <!--                                 If the assessment target does not set the score, it is considered to be              -->
+  <!--                                 0 if the target fails and 1 if the target succeeds.                                  -->
+  <!--          ${aspect.id}.advice  - Advice text or reason for failure presented to the student.                          -->
+  <!--                                 If the assessment target does not set the advice, it will be set to an empty string. -->
+  <!--          ${aspect.id}.details - Optional details and additional info related to score or advice.                     -->
+  <!--                                 If the assessment target does not set the detail message, it will be set to          -->
+  <!--                                 an empty string if the target succeeds and to the error message if it fails.         -->
+  <target name="execute.one.aspect">
+    <trycatch property="error">
+      <try>
+        <limit maxwait="${aspect.time}" failonerror="true">
+          <antfetch dir="${run.path}" antfile="${run.file}" target="${aspect.target}" return="testovid.aspect.score,testovid.aspect.advice,testovid.aspect.details">
+            <property name="testovid.course.id" value="${course.id}"/>
+            <property name="testovid.assignment.id" value="${assignment.id}"/>
+            <property name="testovid.student.id" value="${student.id}"/>
+            <property name="testovid.aspect.id" value="${aspect.id}"/>
+            <property name="testovid.aspect.time" value="${aspect.time}"/>
+            <property name="testovid.aspect.name" value="${aspect.name}"/>
+            <property name="testovid.aspect.weight" value="${aspect.weight}"/>
+            <property file="${aspect.config}"/>
+          </antfetch>
+        </limit>
+        <property name="testovid.aspect.score" value="1"/>
+      </try>
+      <catch>
+        <property name="testovid.aspect.details" value="${error}"/>
+        <property name="testovid.aspect.score" value="0"/>
+      </catch>
+    </trycatch>
+    <property name="testovid.aspect.advice"  value=""/>
+    <property name="testovid.aspect.details" value=""/>
+    <property name="${aspect.id}.time" value="${testovid.aspect.time}" />
+    <property name="${aspect.id}.name" value="${testovid.aspect.name}" />
+    <property name="${aspect.id}.weight" value="${testovid.aspect.weight}" />
+    <property name="${aspect.id}.score" value="${testovid.aspect.score}" />
+    <property name="${aspect.id}.advice" value="${testovid.aspect.advice}" />
+    <property name="${aspect.id}.details" value="${testovid.aspect.details}" />
+  </target>
+
+</project>

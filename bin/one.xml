@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!--                                                                          -->
+<!-- Copyright 2015 Ivan Pribela                                              -->
+<!--                                                                          -->
+<!-- Licensed under the Apache License, Version 2.0 (the "License");          -->
+<!-- you may not use this file except in compliance with the License.         -->
+<!-- You may obtain a copy of the License at                                  -->
+<!--                                                                          -->
+<!--     http://www.apache.org/licenses/LICENSE-2.0                           -->
+<!--                                                                          -->
+<!-- Unless required by applicable law or agreed to in writing, software      -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS,        -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. -->
+<!-- See the License for the specific language governing permissions and      -->
+<!-- limitations under the License.                                           -->
+<!--                                                                          -->
+<project name="testovid.run.one" default="current">
+
+  <!-- Initialization -->
+  <target name="init">
+
+    <!-- Path to testovid -->
+    <dirname property="path.buildfile" file="${ant.file}"/>
+    <property name="path.home" location="${path.buildfile}/.."/>
+
+    <!-- Path to the test engine -->
+    <property name="path.engine" location="${path.home}/bin/engine.xml"/>
+
+    <!-- Path to the course and assignment content -->
+    <property name="path.content" location="${path.home}/courses/${course.id}/${assignment.id}"/>
+
+    <!-- Path to the library folder -->
+    <property name="path.library" location="${path.home}/lib"/>
+
+    <!-- Path of the student's folder -->
+    <property name="path.current" location="${user.dir}"/>
+
+    <!-- Folder with the test files -->
+    <path id="path.test">
+      <pathelement location="${path.content}/test"/>
+    </path>
+    <property name="path.test" refid="path.test"/>
+
+    <!-- Folder for reports -->
+    <path id="path.reports">
+      <pathelement location="${path.content}/reports"/>
+    </path>
+    <property name="path.reports" refid="path.reports"/>
+
+    <!-- Folder for running programs -->
+    <tempfile property="path.scrap" destDir="${path.home}/scrap" prefix="scrap"/>
+
+    <!-- Load Ant-Contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+      <classpath>
+        <pathelement location="${path.home}/bin/ant-contrib.jar"/>
+      </classpath>
+    </taskdef>
+
+    <!-- Load internationalization support -->
+    <property name="locale" value="SR"/>
+    <property file="i18n_${locale}.properties" prefix="i18n" />
+
+    <!-- Create a time stamp -->
+    <tstamp>
+      <format property="time.stamp" pattern="yyMMddHHmm"/>
+      <format property="time.human" pattern="dd.MM.yyyy. HH:mm:ss"/>
+    </tstamp>
+
+    <!-- Prepare files and folders -->
+    <property name="log.master" location="${path.content}/${time.stamp}.csv"/>
+    <delete dir="${path.scrap}"/>
+    <mkdir dir="${path.reports}"/>
+    <mkdir dir="${path.test}"/>
+    <record name="${log.master}" action="start" emacsmode="yes"/>
+    <echo>${i18n.log.master.header.student};${i18n.log.master.header.total}</echo>
+    <record name="${log.master}" action="stop"/>
+
+  </target>
+
+  <!-- Target to run for the student -->
+  <target name="current" depends="init">
+    <basename property="student.id" file="${path.current}"/>
+    <property name="log.name" location="${path.reports}/${student.id}-${time.stamp}.txt"/>
+    <copy todir="${path.scrap}" overwrite="true">
+      <fileset dir="${path.current}"/>
+    </copy>
+    <copy todir="${path.scrap}" overwrite="true">
+      <fileset dir="${path.test}"/>
+    </copy>
+    <ant dir="${path.scrap}" antfile="${path.engine}" inheritAll="no">
+      <property name="course.id"     value="${course.id}"/>
+      <property name="assignment.id" value="${assignment.id}"/>
+      <property name="student.id"    value="${student.id}"/>
+      <property name="log.path"      value="${log.name}"/>
+      <property name="log.master"    value="${log.master}"/>
+      <property name="run.path"      value="${path.scrap}"/>
+      <property name="time.start"    value="${time.human}"/>
+      <property name="lib.path"      value="${path.library}"/>
+      <property name="test.path"     value="${path.test}"/>
+      <property file="i18n_${locale}.properties" prefix="i18n" />
+    </ant>
+    <copy todir="${path.current}" overwrite="true">
+      <fileset dir="${path.scrap}" includes="**/*.rep"/>
+    </copy>
+    <copy file="${log.name}" todir="${path.current}"/>
+    <delete dir="${path.scrap}"/>
+  </target>
+
+</project>
