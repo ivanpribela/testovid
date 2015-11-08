@@ -1,0 +1,1 @@
+This is an empty "solution" for the testing of success and failure assignment.

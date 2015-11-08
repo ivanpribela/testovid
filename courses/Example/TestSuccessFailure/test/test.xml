@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="antprettybuild.xsl"?>
+<project>
+
+  <target name="succeed">
+  	<property name="advice" value="This always succeeds."/>
+  </target>
+
+  <target name="fail">
+    <fail message="This always fails."/>
+  </target>
+
+</project>
