@@ -1,0 +1,305 @@
+<?xml version="1.0"?>
+<!--                                                                          -->
+<!-- Copyright 2015 Ivan Pribela                                              -->
+<!--                                                                          -->
+<!-- Licensed under the Apache License, Version 2.0 (the "License");          -->
+<!-- you may not use this file except in compliance with the License.         -->
+<!-- You may obtain a copy of the License at                                  -->
+<!--                                                                          -->
+<!--     http://www.apache.org/licenses/LICENSE-2.0                           -->
+<!--                                                                          -->
+<!-- Unless required by applicable law or agreed to in writing, software      -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS,        -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. -->
+<!-- See the License for the specific language governing permissions and      -->
+<!-- limitations under the License.                                           -->
+<!--                                                                          -->
+<project name="java">
+
+  <!-- Compiles java source files. Fails on compilation errors.                           -->
+  <!--                                                                                    -->
+  <!-- Input properties:                                                                  -->
+  <!--   srcdir           - Location of the java files.                                   -->
+  <!--   destdir          - Location to store the class files.                            -->
+  <!--   includes         - Comma or space separated list of files that must be included. -->
+  <!--   excludes         - Comma or space separated list of files that must be excluded. -->
+  <!--   classpath        - The classpath to use.                                         -->
+  <!--   version          - Specific VM version.                                          -->
+  <!--   advice.succeeded - Advice to return if the compilation is successful.            -->
+  <!--   advice.failed    - Advice to return if the compilation is not successful.        -->
+  <!--                                                                                    -->
+  <!-- Output properties:                                                                 -->
+  <!--   testovid.aspect.advice - ${advice.succeeded} if the compilation is successful,   -->
+  <!--                            ${advice.failed} otherwise.                             -->
+  <!--   testovid.aspect.score  - 1.0 if the compilation is successful, 0.0 if not.       -->
+  <!--                                                                                    -->
+  <!-- Output files:                                                                      -->
+  <!--   ${testovid.aspect.id}.rep - Compiler output.                                     -->
+  <target name="compilation">
+
+    <!-- Set property defaults. -->
+    <property name="srcdir" value="."/>
+    <property name="destdir" value="${srcdir}"/>
+    <property name="includes" value="**/*.java"/>
+    <property name="excludes" value=""/>
+    <property name="classpath" value=""/>
+    <property name="version" value="1.7"/>
+    <property name="advice.succeeded" value=""/>
+    <property name="advice.failed" value=""/>
+
+    <!-- Run the compile task and record the output. -->
+    <record name="${testovid.aspect.id}.rep" action="start" emacsmode="yes" loglevel="debug"/>
+    <javac srcdir="${srcdir}"
+           destdir="${destdir}"
+           includes="${includes}"
+           excludes="${excludes}"
+           classpath="${classpath}"
+           source="${version}"
+           target="${version}"
+           failonerror="no"
+           errorProperty="compile.fail"
+           debug="on"
+           fork="yes"
+           includeantruntime="false"/>
+    <record name="${testovid.aspect.id}.rep" action="stop"/>
+
+    <!-- Set advices and score. -->
+    <condition property="testovid.aspect.advice" value="${advice.failed}" else="${advice.succeeded}">
+      <equals arg1="${compile.fail}" arg2="true"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0" else="1.0">
+      <equals arg1="${compile.fail}" arg2="true"/>
+    </condition>
+
+  </target>
+
+  <!-- Checks code style of java source files. Fails on too many style errors and warnings.        -->
+  <!--                                                                                             -->
+  <!-- Input properties:                                                                           -->
+  <!--   srcdir           - Location of the java files.                                            -->
+  <!--   includes         - Comma or space separated list of files that must be included.          -->
+  <!--   excludes         - Comma or space separated list of files that must be excluded.          -->
+  <!--   rules            - Location of the file with style rules.                                 -->
+  <!--   max.errors       - The maximum number of errors that are tolerated.                       -->
+  <!--   max.warnings     - The maximum number of warnings that are tolerated.                     -->
+  <!--   advice.succeeded - Advice to return if the compilation is successful.                     -->
+  <!--   advice.failed    - Advice to return if the compilation is not successful.                 -->
+  <!--                                                                                             -->
+  <!-- Output properties:                                                                          -->
+  <!--   testovid.aspect.advice - ${advice.succeeded} if the style is correct,                     -->
+  <!--                            ${advice.failed} if there are too many style errors or warnings. -->
+  <!--   testovid.aspect.score  - 1.0 if the style is correct, 0.0 if there are too manynot.       -->
+  <!--                            style errors or warnings.                                        -->
+  <!--                                                                                             -->
+  <!-- Output files:                                                                               -->
+  <!--   ${testovid.aspect.id}.rep - Style checker output.                                         -->
+  <target name="style">
+
+    <!-- Load the checkstyle library. -->
+    <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+             classpath="${lib.path}/java/checkstyle/checkstyle.jar"/>
+
+    <!-- Set property defaults. -->
+    <property name="srcdir" value="."/>
+    <property name="includes" value="**/*.java"/>
+    <property name="excludes" value=""/>
+    <property name="rules" value="${lib.path}/java/checkstyle/checkstyle.sun.nojavadoc.xml"/>
+    <property name="max.errors" value="0"/>
+    <property name="max.warnings" value="0"/>
+    <property name="advice.succeeded" value=""/>
+    <property name="advice.failed" value=""/>
+
+    <!-- Run the style checker task and record the output. -->
+    <checkstyle config="${rules}"
+                maxErrors="${max.errors}"
+                maxWarnings="${max.warnings}"
+                failOnViolation="no"
+                failureProperty="style.fail">
+      <fileset dir="${srcdir}" includes="${includes}" excludes="${excludes}"/>
+      <formatter type="plain" toFile="${testovid.aspect.id}.rep"/>
+    </checkstyle>
+
+    <!-- Set advices and score. -->
+    <condition property="testovid.aspect.advice" value="${advice.failed}" else="${advice.succeeded}">
+      <isset property="style.fail"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0" else="1.0">
+      <isset property="style.fail"/>
+    </condition>
+    <condition property="testovid.aspect.details" value="${style.fail}">
+      <isset property="style.fail"/>
+    </condition>
+
+  </target>
+
+  <!-- Runs the specified Java program. Fails on non-zero exit code.                      -->
+  <!--                                                                                    -->
+  <!-- Input properties:                                                                  -->
+  <!--   srcdir           - Location of the java files.                                   -->
+  <!--   destdir          - Location to store the class files.                            -->
+  <!--   includes         - Comma or space separated list of files that must be included. -->
+  <!--   excludes         - Comma or space separated list of files that must be excluded. -->
+  <!--   classpath        - The classpath to use.                                         -->
+  <!--   version          - Specific VM version.                                          -->
+  <!--   mainclass        - The class to run.                                             -->
+  <!--   arguments        - The command line arguments to run with.                       -->
+  <!--   memory           - Maximum memory allowed.                                       -->
+  <!--   policy           - Path to Java security policy to enforce.                      -->
+  <!--   advice.succeeded - Advice to return if the execution is successful.              -->
+  <!--   advice.failed    - Advice to return if the execution is not successful.          -->
+  <!--                                                                                    -->
+  <!-- Output properties:                                                                 -->
+  <!--   testovid.aspect.advice - ${advice.succeeded} if the execution is successful,     -->
+  <!--                            ${advice.failed} otherwise.                             -->
+  <!--   testovid.aspect.score  - 1.0 if the test is successful, 0.0 if not.              -->
+  <!--                                                                                    -->
+  <!-- Output files:                                                                      -->
+  <!--   TEST-${test.name}.rep - JVM output, one file for each test that was run.         -->
+  <target name="exec">
+    <property name="srcdir" value="."/>
+    <property name="destdir" value="${srcdir}"/>
+    <property name="includes" value="**/*.java"/>
+    <property name="excludes" value=""/>
+    <property name="classpath" value=""/>
+    <property name="version" value="1.7"/>
+    <property name="mainclass" value="Main"/>
+    <property name="arguments" value=""/>
+    <property name="memory" value="128m"/>
+    <property name="policy" value="${lib.path}/java/security.all.policy"/>
+    <property name="advice.succeeded" value=""/>
+    <property name="advice.failed" value=""/>
+
+    <!-- Compile the classes. -->
+    <javac srcdir="${srcdir}"
+           destdir="${destdir}"
+           includes="${includes}"
+           excludes="${excludes}"
+           classpath="${classpath}"
+           source="${version}"
+           target="${version}"
+           failonerror="no"
+           errorProperty="test.error"
+           debug="on"
+           fork="yes">
+      <classpath>
+        <pathelement location="${classpath}"/>
+      </classpath>
+    </javac>
+
+    <!-- Run the Java class. -->
+    <java fork="yes" maxmemory="${memory}"
+          failonerror="false" errorProperty="test.fail"
+          classname="${mainclass}" args="${arguments}">
+      <jvmarg value="-Djava.security.manager"/>
+      <jvmarg value="-Djava.security.policy=${policy}"/>
+      <classpath>
+        <pathelement location="${classpath}"/>
+        <pathelement location="${destdir}"/>
+      </classpath>
+    </java>
+
+    <!-- Set advices and score. -->
+    <condition property="testovid.aspect.advice" value="${advice.error}">
+      <isset property="${test.error}"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0">
+      <isset property="${test.error}"/>
+    </condition>
+    <condition property="testovid.aspect.advice" value="${advice.failed}" else="${advice.succeeded}">
+      <isset property="test.fail"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0" else="1.0">
+      <isset property="test.fail"/>
+    </condition>
+
+  </target>
+
+  <!-- Runs unit tests on Java classes. Fails if any of the tests is not successful.      -->
+  <!--                                                                                    -->
+  <!-- Input properties:                                                                  -->
+  <!--   srcdir           - Location of the java files.                                   -->
+  <!--   destdir          - Location to store the class files.                            -->
+  <!--   includes         - Comma or space separated list of files that must be included. -->
+  <!--   excludes         - Comma or space separated list of files that must be excluded. -->
+  <!--   classpath        - The classpath to use.                                         -->
+  <!--   version          - Specific VM version.                                          -->
+  <!--   memory           - Maximum memory allowed.                                       -->
+  <!--   policy           - Path to Java security policy to enforce.                      -->
+  <!--   advice.succeeded - Advice to return if the compilation is successful.            -->
+  <!--   advice.failed    - Advice to return if the compilation is not successful.        -->
+  <!--                                                                                    -->
+  <!-- Output properties:                                                                 -->
+  <!--   testovid.aspect.advice - ${advice.succeeded} if the tests are successful,        -->
+  <!--                            ${advice.failed} if any of the tests fails.             -->
+  <!--   testovid.aspect.score  - 1.0 if the test is successful, 0.0 if not.              -->
+  <!--                                                                                    -->
+  <!-- Output files:                                                                      -->
+  <!--   TEST-${test.name}.rep - JUnit test output, one file for each test that was run.  -->
+  <target name="junit">
+    <property name="srcdir" value="."/>
+    <property name="destdir" value="${srcdir}"/>
+    <property name="includes" value="**/*Test*.java"/>
+    <property name="excludes" value="**/AllTests.java"/>
+    <property name="classpath" value=""/>
+    <property name="version" value="1.7"/>
+    <property name="memory" value="128m"/>
+    <property name="policy" value="${lib.path}/java/security.all.policy"/>
+    <property name="advice.succeeded" value=""/>
+    <property name="advice.failed" value=""/>
+
+    <!-- Compile the classes. -->
+    <javac srcdir="${srcdir}"
+           destdir="${destdir}"
+           includes="${includes}"
+           excludes="${excludes}"
+           classpath="${classpath}"
+           source="${version}"
+           target="${version}"
+           failonerror="no"
+           errorProperty="test.error"
+           debug="on"
+           fork="yes">
+      <classpath>
+        <pathelement location="${classpath}"/>
+        <pathelement location="${lib.path}/java/junit/junit.jar"/>
+      </classpath>
+    </javac>
+
+    <!-- Run the unit test. -->
+    <junit fork="yes" maxmemory="${memory}"
+          haltonerror="false" errorproperty="test.error"
+          haltonfailure="false" failureproperty="test.fail">
+      <jvmarg value="-Djava.security.manager"/>
+      <jvmarg value="-Djava.security.policy=${policy}"/>
+      <classpath>
+        <pathelement location="${classpath}"/>
+        <pathelement location="${destdir}"/>
+        <pathelement location="${lib.path}/java/junit/junit.jar"/>
+        <pathelement location="${lib.path}/java/junit/hamcrest-core.jar"/>
+      </classpath>
+      <batchtest todir=".">
+        <fileset dir="${srcdir}">
+          <include name="${includes}"/>
+          <exclude name="${excludes}"/>
+         </fileset>
+         <formatter type="plain" extension=".rep"/>
+      </batchtest>
+    </junit>
+
+    <!-- Set advices and score. -->
+    <condition property="testovid.aspect.advice" value="${advice.error}">
+      <isset property="${test.error}"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0">
+      <isset property="${test.error}"/>
+    </condition>
+    <condition property="testovid.aspect.advice" value="${advice.failed}" else="${advice.succeeded}">
+      <isset property="test.fail"/>
+    </condition>
+    <condition property="testovid.aspect.score" value="0.0" else="1.0">
+      <isset property="test.fail"/>
+    </condition>
+
+  </target>
+
+</project>
