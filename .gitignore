@@ -13,3 +13,17 @@ scrap/
 *.csv
 reports/
 log.txt
+
+########################
+# Libraries and tools  #
+# not distributed with #
+# Testovid system      #
+########################
+
+/bin/ant-contrib.jar
+
+/lib/java/checkstyle/checkstyle.jar
+/lib/java/checkstyle/checkstyle.defaults.xml
+
+/lib/java/junit/junit.jar
+/lib/java/junit/hamcrest-core.jar
