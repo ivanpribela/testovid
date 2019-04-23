@@ -1,0 +1,51 @@
+Requirements
+============
+
+1. Java SDK, version 1.7+
+Install using your favorite package manager or download from
+https://openjdk.java.net/ or https://www.oracle.com/technetwork/java/javase/
+
+2. Apache Ant, version 1.6+
+Install using your favorite package manager or download from
+https://ant.apache.org/
+
+3. ANT Contrib tasks for Ant, version 0.6 - 1.0b2
+Download the library from http://ant-contrib.sourceforge.net/ and
+install either to /lib folder of the Apache Ant installation or
+to /bin folder of the Testovid installation
+
+Installation
+============
+
+1. Unpack the archive or clone the repository to a desired folder
+
+2. Add /path/to/testovid/bin to the system path for easier invocation
+
+3. Add environment variable TESTOVID_HOME to point to /path/to/testovid
+
+Folder structure
+================
+
+The Testovid folder structure is as following:
+
+bin     - Testovid binaries, scripts and localization files
+lib     - Libraries and tools used by domain specific testers
+scrap   - Holds student files and test cases during testing
+courses - Each folder inside represents one course with
+          assignments as its subfolders, for example:
+
+          courses/cs1/assignment1
+          courses/cs1/assignment2
+          courses/cs1/assignment3
+          courses/cs1/assignment4
+          courses/data-structures/1-intro
+          courses/data-structures/2-stack
+          courses/data-structures/3-queue
+          ...
+
+Folder structure for each course and assignment is as following:
+
+solutions - Each folder inside represents one student's solution
+            to the corresponding assignment
+test      - Domain specific tester for the assignment
+results   - Holds the test results

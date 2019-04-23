@@ -1,0 +1,41 @@
+Usage
+=====
+
+1. Create the folders for your course and assignments. For example,
+for a course named "Example" and the assignement named "Java" the
+folders should be:
+/path/to/testovid/courses/Example/Java/solutions
+/path/to/testovid/courses/Example/Java/test
+
+2. Populate the former folder with student solutions and the
+latter with a domain specific tester for the assignment
+
+3. Run the Testovid system in batch mode on all the suplied
+solutions using the "all" script:
+all <course.id> <assignment.id> <locale>
+
+For example, to test all solutions of the "Java" assignment
+on the course "Example" on Windows and generate reports in
+english, run:
+all.bat Example Java EN
+
+Another example is to test all solutions gathered for the second
+assignment on Data Structures course on Linux and generate
+the reports in german:
+all.sh data-structures 2-stack DE
+
+4. After all tests have been completed, one report file will
+be generated for each test attempt. The report is named after
+the student id and a time stamp, and is placed in the "results"
+subfolder of the assignment. Also, one .csv file is generated
+containing results for all the solutions. Depending on the tests
+performed by the domain specific tester zero or more .rep files
+will be generated in the folders containing gathered solutions,
+one for each tested aspect.
+
+5. To run the system in online mode and test just one solution
+without collecting the files in Testovid installation folder,
+run the "one" script in the folder containing the student's files.
+one <course.id> <assignment.id> <locale>
+
+The reports will be generated in the folder where the script was run.
