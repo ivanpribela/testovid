@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<project>
+
+  <!-- Import standard java tests. -->
+  <import file="${lib.path}/java.xml"/>
+
+  <!-- Custom tests. -->
+  <target name="customexecute">
+    <javac srcdir="." includes="QuickSortMain.java"/>
+    <java classname="QuickSortMain">
+      <jvmarg value="-Djava.security.manager"/>
+      <jvmarg value="-Djava.security.policy=${policy}"/>
+    </java>
+  </target>
+
+</project>
